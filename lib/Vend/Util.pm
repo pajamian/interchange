@@ -2127,6 +2127,8 @@ sub send_mail {
 
 	SMTP: {
 		my $mhost = $::Variable->{MV_SMTPHOST} || $Global::Variable->{MV_SMTPHOST};
+		my $user = $::Variable->{MV_SMTPUSER} || $Global::Variable->{MV_SMTPUSER};
+		my $pass = $::Variable->{MV_SMTPPASS} || $Global::Variable->{MV_SMTPPASS};
 		my $helo =  $Global::Variable->{MV_HELO} || $::Variable->{SERVER_NAME};
 		last SMTP unless $none and $mhost;
 		eval {
@@ -2139,6 +2141,7 @@ sub send_mail {
 		undef $none;
 
 		my $smtp = Net::SMTP->new($mhost, Debug => $Global::Variable->{DEBUG}, Hello => $helo) or last SMTP;
+		$smtp->auth($user, $pass) if $user && $pass;
 #::logDebug("smtp object $smtp");
 
 		my $from = $::Variable->{MV_MAILFROM}

@@ -438,14 +438,18 @@ sub tag_mime_lite_email {
 		# Unlike in previous implementations in IC, MV_SMTPHOST is not required.
 		# (Net::SMTP gets to figure out the host).
 		my $smtphost = $::Variable->{MV_SMTPHOST} ||
-			$Global::Variable->{MV_SMTPHOST};
+			$Global::Variable->{MV_SMTPHOST} || undef;
+
+		my $user = $::Variable->{MV_SMTPUSER} || $Global::Variable->{MV_SMTPUSER};
+		my $pass = $::Variable->{MV_SMTPPASS} || $Global::Variable->{MV_SMTPPASS};
 
 		my $timeout = $::Variable->{MV_SMTP_TIMEOUT} ||
 			$Global::Variable->{MV_SMTP_TIMEOUT} || 60;
 
-		MIME::Lite->send('smtp', $smtphost ?
-				($smtphost, $timeout) :
-				($timeout) );
+		my @args = (Timeout => $timeout);
+		push @args, (AuthUser => $user, AuthPass => $pass) if $user && $pass;
+
+		MIME::Lite->send('smtp', $smtphost, @args);
 
 	} else { # (We know we're sending using sendmail now).
 
@@ -665,6 +669,8 @@ sub send_mail_legacy {
 
 	SMTP: {
 		my $mhost = $::Variable->{MV_SMTPHOST} || $Global::Variable->{MV_SMTPHOST};
+		my $user = $::Variable->{MV_SMTPUSER} || $Global::Variable->{MV_SMTPUSER};
+		my $pass = $::Variable->{MV_SMTPPASS} || $Global::Variable->{MV_SMTPPASS};
 		my $helo =  $Global::Variable->{MV_HELO} || $::Variable->{SERVER_NAME};
 		last SMTP unless $none and $mhost;
 		eval {
@@ -677,6 +683,7 @@ sub send_mail_legacy {
 		undef $none;
 
 		my $smtp = Net::SMTP->new($mhost, Debug => $Global::Variable->{DEBUG}, Hello => $helo);
+		$smtp->auth($user, $pass) if $user && $pass;
 #::logDebug("smtp object $smtp");
 
 		my $from = $::Variable->{MV_MAILFROM}
