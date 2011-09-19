@@ -2141,7 +2141,12 @@ sub send_mail {
 		undef $none;
 
 		my $smtp = Net::SMTP->new($mhost, Debug => $Global::Variable->{DEBUG}, Hello => $helo) or last SMTP;
-		$smtp->auth($user, $pass) if $user && $pass;
+		$user && $pass and $smtp->auth($user, $pass) or do {
+		    my $code = $smtp->code();
+		    my $message = $smtp->message();
+		    ::logError("Error $code: $message when attempting SASL authentication");
+		    last SMTP;
+		};
 #::logDebug("smtp object $smtp");
 
 		my $from = $::Variable->{MV_MAILFROM}
